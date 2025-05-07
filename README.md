@@ -1,6 +1,15 @@
 # Gemini Web Translator Firefox Extension
 
-This Firefox extension allows you to translate web pages and ask questions about web page content using the Gemini API.
+[![GitHub release](https://img.shields.io/github/v/release/masihRezaei/Gemini-Web-Translator)](https://github.com/masihRezaei/Gemini-Web-Translator/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+This Firefox extension allows you to translate web pages and ask questions about web page content using the Google Gemini AI API. Perfect for multilingual browsing, language learning, and understanding content in foreign languages.
+
+🔗 [Install from GitHub](https://github.com/masihRezaei/Gemini-Web-Translator/releases)
+
+## Overview
+
+Gemini Web Translator is a powerful browser extension that leverages Google's Gemini AI models to provide high-quality translations directly within your browser. Unlike traditional translation tools, it preserves the original page layout and design while translating the content.
 
 ## Features
 
@@ -146,3 +155,7 @@ This project is open source and available under the MIT License.
 ## Disclaimer
 
 This extension is not affiliated with Google or the Gemini API. It is an independent project that uses the Gemini API for translation and question answering.
+
+## Keywords
+
+gemini translator, google gemini, web page translator, firefox extension, browser translator, ai translation, gemini api, language translator, multilingual browser, web translation tool, gemini ai, google ai, firefox addon, persian translator, rtl language support, in-place translation, ai powered translation, website translator, gemini 1.5, gemini pro

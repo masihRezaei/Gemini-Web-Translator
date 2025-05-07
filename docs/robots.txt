@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://masihrezaei.github.io/Gemini-Web-Translator/sitemap.xml

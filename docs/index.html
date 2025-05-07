@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Web Translator - Firefox Extension for AI-Powered Translation</title>
+    <meta name="description" content="Translate web pages and ask questions using Google Gemini AI. This Firefox extension preserves page layout while translating content in multiple languages.">
+    <meta name="keywords" content="gemini translator, google gemini, web page translator, firefox extension, browser translator, ai translation, gemini api, language translator, multilingual browser, web translation tool, gemini ai, google ai, firefox addon, persian translator, rtl language support">
+    <meta name="author" content="masihRezaei">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://masihrezaei.github.io/Gemini-Web-Translator/">
+    <meta property="og:title" content="Gemini Web Translator - Firefox Extension">
+    <meta property="og:description" content="Translate web pages and ask questions using Google Gemini AI. This Firefox extension preserves page layout while translating content in multiple languages.">
+    <meta property="og:image" content="https://raw.githubusercontent.com/masihRezaei/Gemini-Web-Translator/main/icons/icon-128.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://masihrezaei.github.io/Gemini-Web-Translator/">
+    <meta property="twitter:title" content="Gemini Web Translator - Firefox Extension">
+    <meta property="twitter:description" content="Translate web pages and ask questions using Google Gemini AI. This Firefox extension preserves page layout while translating content in multiple languages.">
+    <meta property="twitter:image" content="https://raw.githubusercontent.com/masihRezaei/Gemini-Web-Translator/main/icons/icon-128.png">
+    
+    <style>
+        :root {
+            --primary-color: #4285f4;
+            --secondary-color: #34a853;
+            --accent-color: #ea4335;
+            --text-color: #333;
+            --light-bg: #f9f9f9;
+            --dark-bg: #1a1a1a;
+            --card-bg: #ffffff;
+            --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--light-bg);
+            margin: 0;
+            padding: 0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+        }
+        
+        header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+        }
+        
+        header p {
+            margin: 1rem 0 0;
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 12px 24px;
+            margin-top: 20px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        .cta-button:hover {
+            background-color: #2d9348;
+        }
+        
+        section {
+            padding: 3rem 0;
+        }
+        
+        h2 {
+            color: var(--primary-color);
+            margin-top: 0;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .feature-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .feature-card h3 {
+            color: var(--primary-color);
+            margin-top: 0;
+        }
+        
+        .languages {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .language-tag {
+            background-color: var(--light-bg);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .screenshots {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .screenshot {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .screenshot img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        footer {
+            background-color: var(--dark-bg);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+        }
+        
+        footer a {
+            color: var(--secondary-color);
+            text-decoration: none;
+        }
+        
+        footer a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2rem;
+            }
+            
+            .features, .screenshots {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Gemini Web Translator</h1>
+            <p>Translate web pages and ask questions using Google Gemini AI</p>
+            <a href="https://github.com/masihRezaei/Gemini-Web-Translator/releases" class="cta-button">Download Extension</a>
+        </div>
+    </header>
+    
+    <section class="container">
+        <h2>About the Extension</h2>
+        <p>Gemini Web Translator is a powerful Firefox extension that leverages Google's Gemini AI models to provide high-quality translations directly within your browser. Unlike traditional translation tools, it preserves the original page layout and design while translating the content.</p>
+        
+        <div class="features">
+            <div class="feature-card">
+                <h3>In-Place Translation</h3>
+                <p>Translate entire web pages to different languages while preserving the original page layout. No page restructuring or redirection to external services.</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>Ask Questions</h3>
+                <p>Ask questions about the content of the current web page and get intelligent answers powered by Google's Gemini AI models.</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>Multiple Gemini Models</h3>
+                <p>Choose from different Gemini models including Gemini Pro, Gemini 1.0 Pro, Gemini 1.5 Pro, and Gemini 1.5 Flash for optimal performance.</p>
+            </div>
+        </div>
+    </section>
+    
+    <section class="container">
+        <h2>Supported Languages</h2>
+        <p>Translate content between multiple languages with special support for RTL languages like Persian.</p>
+        
+        <div class="languages">
+            <span class="language-tag">Persian (Farsi)</span>
+            <span class="language-tag">English</span>
+            <span class="language-tag">French</span>
+            <span class="language-tag">German</span>
+            <span class="language-tag">Spanish</span>
+            <span class="language-tag">Arabic</span>
+            <span class="language-tag">Chinese</span>
+            <span class="language-tag">Russian</span>
+        </div>
+    </section>
+    
+    <section class="container">
+        <h2>How to Use</h2>
+        <ol>
+            <li>Install the extension from <a href="https://github.com/masihRezaei/Gemini-Web-Translator/releases">GitHub Releases</a></li>
+            <li>Enter your Gemini API key (get one from <a href="https://ai.google.dev/">Google AI Studio</a>)</li>
+            <li>Select your preferred Gemini model</li>
+            <li>Click the extension icon in the address bar to translate pages or ask questions</li>
+        </ol>
+    </section>
+    
+    <footer>
+        <div class="container">
+            <p>Developed by <a href="https://github.com/masihRezaei">masihRezaei</a> | <a href="https://github.com/masihRezaei/Gemini-Web-Translator">View on GitHub</a></p>
+            <p>This extension is not affiliated with Google or the Gemini API. It is an independent project that uses the Gemini API for translation and question answering.</p>
+        </div>
+    </footer>
+</body>
+</html>
