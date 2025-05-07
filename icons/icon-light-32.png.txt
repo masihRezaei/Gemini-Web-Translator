@@ -1,0 +1,2 @@
+This is a placeholder for the light 32x32 icon.
+Please use the convert-svg-to-png.html tool to generate the actual PNG file.

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Getting Started with Gemini Web Translator</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+      color: #333;
+    }
+    h1, h2, h3 {
+      color: #1a73e8;
+    }
+    .step {
+      margin-bottom: 30px;
+      padding: 15px;
+      border-left: 4px solid #1a73e8;
+      background-color: #f5f5f5;
+    }
+    code {
+      background-color: #eee;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+    img {
+      max-width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+    .note {
+      background-color: #fff8e1;
+      padding: 10px;
+      border-left: 4px solid #ffc107;
+      margin: 15px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Getting Started with Gemini Web Translator</h1>
+
+  <p>Welcome to the Gemini Web Translator Firefox extension! This guide will help you get started with using the extension to translate web pages and ask questions about web content using the Gemini API.</p>
+
+  <div class="step">
+    <h2>Step 1: Get a Gemini API Key</h2>
+    <p>Before you can use the extension, you need to get a Gemini API key:</p>
+    <ol>
+      <li>Go to <a href="https://ai.google.dev/" target="_blank">Google AI Studio</a></li>
+      <li>Sign in with your Google account</li>
+      <li>Navigate to the API keys section</li>
+      <li>Create a new API key</li>
+      <li>Copy the API key - you'll need it for the extension</li>
+    </ol>
+    <div class="note">
+      <strong>Note:</strong> Make sure your API key has access to the Gemini 1.0 Pro model. The extension uses the v1 API endpoint.
+    </div>
+  </div>
+
+  <div class="step">
+    <h2>Step 2: Set Up the Extension</h2>
+    <p>After installing the extension:</p>
+    <ol>
+      <li>Click on the extension icon in the Firefox toolbar</li>
+      <li>Paste your Gemini API key in the field at the bottom of the popup</li>
+      <li>Select the Gemini model you want to use from the dropdown menu:
+        <ul>
+          <li><strong>Gemini Pro</strong>: The standard Gemini Pro model</li>
+          <li><strong>Gemini 1.0 Pro</strong>: The Gemini 1.0 Pro model</li>
+          <li><strong>Gemini 1.5 Pro</strong>: The Gemini 1.5 Pro model (more advanced)</li>
+          <li><strong>Gemini 1.5 Flash</strong>: A faster version of Gemini 1.5</li>
+        </ul>
+      </li>
+      <li>Click "Save Settings"</li>
+      <li>You should see a confirmation message that the settings were saved successfully</li>
+    </ol>
+    <div class="note">
+      <strong>Important:</strong> Make sure your API key has access to the model you select. Different API keys may have access to different models.
+    </div>
+  </div>
+
+  <div class="step">
+    <h2>Step 3: Translating Web Pages</h2>
+    <p>To translate a web page:</p>
+    <ol>
+      <li>Navigate to the web page you want to translate</li>
+      <li>Click on the extension icon to open the popup</li>
+      <li>Make sure you're on the "Translate" tab</li>
+      <li>Select the target language from the dropdown (e.g., Persian, English, etc.)</li>
+      <li>Click "Translate Page"</li>
+      <li>Wait for the translation to complete (you'll see a progress indicator)</li>
+      <li>The text on the page will be translated in-place, preserving the original layout and structure</li>
+      <li>To restore the original content, click the "Restore Original" button that appears on the page</li>
+    </ol>
+    <div class="note">
+      <strong>New Feature:</strong> The extension now translates text directly in-place, preserving the original page layout. This means images, formatting, and page structure remain intact while only the text is translated.
+    </div>
+  </div>
+
+  <div class="step">
+    <h2>Step 4: Asking Questions About Web Pages</h2>
+    <p>To ask questions about the current web page:</p>
+    <ol>
+      <li>Navigate to the web page you want to ask about</li>
+      <li>Click on the extension icon to open the popup</li>
+      <li>Click on the "Ask Question" tab</li>
+      <li>Type your question in the text area</li>
+      <li>Click "Ask Gemini"</li>
+      <li>Wait for the response</li>
+      <li>The answer will appear below the question</li>
+    </ol>
+  </div>
+
+  <div class="note">
+    <h3>Troubleshooting</h3>
+    <p>If you encounter any issues:</p>
+    <ul>
+      <li>Make sure your API key is correct and has been saved</li>
+      <li>Check that you have an active internet connection</li>
+      <li>Try different Gemini models if you get an error about a model not being found</li>
+      <li>Common errors and solutions:
+        <ul>
+          <li><strong>"models/X is not found for API version Y"</strong>: Your API key doesn't have access to the selected model. Try a different model.</li>
+          <li><strong>"API key not valid"</strong>: Double-check your API key or generate a new one.</li>
+          <li><strong>"Quota exceeded"</strong>: You've reached your API usage limit. Wait or upgrade your API plan.</li>
+        </ul>
+      </li>
+      <li>For very large pages, only a portion of the content may be translated due to API token limits</li>
+      <li>If you see an error message, it may provide specific information about what went wrong</li>
+    </ul>
+  </div>
+
+  <p>Thank you for using the Gemini Web Translator extension! If you have any questions or feedback, please refer to the README.md file in the extension directory.</p>
+</body>
+</html>
