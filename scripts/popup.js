@@ -12,23 +12,53 @@ const browser = window.browser ||
       sendMessage: () => Promise.resolve(),
     },
   };
-
+const browserAPI = typeof browser !== "undefined" ? browser : chrome;
 // Function to detect if we're in a browser extension popup
 function isExtensionPopup() {
   // Check if we're in a browser extension popup (small viewport)
   return window.innerWidth < 600 && window.innerHeight < 600;
 }
 
+// Function to optimize translation performance
+function optimizeTranslationPerformance() {
+  // Use a more efficient model for translations
+  browser.storage.local.get(["geminiModel"]).then((result) => {
+    // If no model is set or it's not a flash model, use a flash model
+    if (!result.geminiModel || !result.geminiModel.includes("flash")) {
+      console.log("Optimizing translation performance by using a flash model");
+
+      // Determine the best model to use based on what's available
+      // Prefer newer models for better performance
+      const bestModel = "gemini-2.0-flash";
+
+      // Set the model to a flash model for better performance
+      browser.storage.local.set({ geminiModel: bestModel });
+
+      // Update the UI if the model selector exists
+      const modelSelector = document.getElementById("ai-model");
+      if (modelSelector) {
+        modelSelector.value = bestModel;
+      }
+    }
+  });
+}
+
 // Function to detect if we're on a mobile device
 function isMobileDevice() {
-  // Check for mobile device using user agent
-  const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-  return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
-    userAgent.toLowerCase()
-  );
+  // Check for mobile device using user agent only, not window size
+  const userAgent = navigator.userAgent || window.opera;
+  const isMobile =
+    /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
+      userAgent.toLowerCase()
+    );
+  console.log("Popup detected mobile device:", isMobile);
+  return isMobile;
 }
 
 document.addEventListener("DOMContentLoaded", function () {
+  // Optimize translation performance
+  optimizeTranslationPerformance();
+
   // Set appropriate classes based on device detection
   const container = document.getElementById("translatePopup");
 
@@ -54,29 +84,44 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
+  // Initialize Ask AI functionality
+  initializeAskAI();
+
   // Close button functionality
   const closeButton = document.getElementById("closeBtn");
   if (closeButton) {
     closeButton.addEventListener("click", () => {
-      window.close(); // Close the popup window
+      // Check if we're in a mobile popup iframe
+      const isMobilePopup = window.self !== window.top && isMobileDevice();
+
+      if (isMobilePopup) {
+        // We're in an iframe inside the mobile popup
+        // Send a message to the parent window to close the popup
+        window.parent.postMessage({ action: "closePopup" }, "*");
+      } else {
+        // We're in a regular popup window
+        window.close();
+      }
     });
   }
 
-  // Toggle page translation mode button
-  const togglePageTranslationBtn = document.getElementById("togglePageTranslation");
-  if (togglePageTranslationBtn) {
-    togglePageTranslationBtn.addEventListener("click", () => {
+  // Translate page button in header
+  const translatePageBtn = document.getElementById("translatePageBtn");
+  if (translatePageBtn) {
+    translatePageBtn.addEventListener("click", () => {
       const container = document.getElementById("translatePopup");
-      const pageTranslationMode = document.getElementById("pageTranslationMode");
-      const textTranslationMode = document.getElementById("textTranslationMode");
+      const pageTranslationMode = document.getElementById(
+        "pageTranslationMode"
+      );
+      const textTranslationMode = document.getElementById(
+        "textTranslationMode"
+      );
 
       // Toggle simple mode class
       container.classList.toggle("simple-mode");
 
       // Update button title based on current state
       if (container.classList.contains("simple-mode")) {
-        togglePageTranslationBtn.title = "Show full interface";
-
         // Make sure the page translation mode is visible
         if (pageTranslationMode) {
           pageTranslationMode.classList.remove("hidden");
@@ -88,8 +133,10 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // Update source and target language names in the page translation text
-        const sourceLanguageName = document.getElementById("sourceLanguageName");
-        const targetLanguageName = document.getElementById("targetLanguageName");
+        const sourceLanguageName =
+          document.getElementById("sourceLanguageName");
+        const targetLanguageName =
+          document.getElementById("targetLanguageName");
         const sourceLang = document.getElementById("sourceLang").value;
         const targetLang = document.getElementById("targetLang").value;
 
@@ -98,8 +145,6 @@ document.addEventListener("DOMContentLoaded", function () {
           targetLanguageName.textContent = getLanguageName(targetLang);
         }
       } else {
-        togglePageTranslationBtn.title = "Enable page translation";
-
         // Restore normal view - show text translation mode and hide page translation mode
         if (textTranslationMode) {
           textTranslationMode.classList.remove("hidden");
@@ -112,58 +157,48 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Translate page button in header
-  const translatePageBtn = document.getElementById("translatePageBtn");
-  if (translatePageBtn) {
-    translatePageBtn.addEventListener("click", () => {
-      // Enable simple mode
-      const container = document.getElementById("translatePopup");
-      const togglePageTranslationBtn = document.getElementById("togglePageTranslation");
+  // Add event listener for the translate page button inside the page translation mode
+  const translatePageButton = document.getElementById("translate-page-button");
+  if (translatePageButton) {
+    translatePageButton.addEventListener("click", () => {
+      // Get the API key and model
+      browser.storage.local
+        .get(["geminiApiKey", "geminiModel", "translationTone"])
+        .then((result) => {
+          if (!result.geminiApiKey) {
+            alert("Please set your Gemini API key in the settings first.");
+            return;
+          }
 
-      // If not already in simple mode, switch to it
-      if (!container.classList.contains("simple-mode") && togglePageTranslationBtn) {
-        togglePageTranslationBtn.click();
-      } else {
-        // If already in simple mode, just make sure the page translation mode is visible
-        const pageTranslationMode = document.getElementById("pageTranslationMode");
-        if (pageTranslationMode) {
-          pageTranslationMode.classList.remove("hidden");
-        }
-      }
+          // Get the target language
+          const targetLang = document.getElementById("targetLang").value;
+          const tone = result.translationTone || "neutral";
 
-      // Show the translate page section
-      const tabButtons = document.querySelectorAll(".tab-btn");
-      const tabContents = document.querySelectorAll(".section");
+          // Send message to translate the current page
+          browser.tabs
+            .query({ active: true, currentWindow: true })
+            .then((tabs) => {
+              if (tabs.length === 0) {
+                alert("Could not connect to the current tab.");
+                return;
+              }
 
-      // Remove active class from all buttons and hide all contents
-      tabButtons.forEach((btn) => btn.classList.remove("active"));
-      tabContents.forEach((content) => content.classList.add("hidden"));
-
-      // Activate the translation tab
-      const translateButton = document.querySelector(
-        '[data-tab="translationSection"]'
-      );
-      if (translateButton) {
-        translateButton.classList.add("active");
-      }
-
-      const translationSection = document.getElementById("translationSection");
-      if (translationSection) {
-        translationSection.classList.remove("hidden");
-      }
-
-      // Get the target language and save it
-      const targetLanguage = document.getElementById("targetLang").value;
-      browser.storage.local.set({ lastTargetLang: targetLanguage });
-      console.log("Target language saved from header button:", targetLanguage);
-
-      // Trigger the translate page button
-      const translatePageButton = document.getElementById(
-        "translate-page-button"
-      );
-      if (translatePageButton) {
-        translatePageButton.click();
-      }
+              browser.tabs
+                .sendMessage(tabs[0].id, {
+                  action: "translate",
+                  targetLanguage: targetLang,
+                  apiKey: result.geminiApiKey,
+                  model: result.geminiModel || "gemini-1.5-flash",
+                  tone: tone,
+                })
+                .catch((error) => {
+                  console.error("Error sending translation message:", error);
+                  alert(
+                    "Error: Could not send translation request to the page."
+                  );
+                });
+            });
+        });
     });
   }
 
@@ -189,7 +224,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Save the swapped language selections
     browser.storage.local.set({
       lastSourceLang: targetValue,
-      lastTargetLang: sourceValue
+      lastTargetLang: sourceValue,
     });
     console.log("Languages swapped and saved:", targetValue, sourceValue);
 
@@ -200,6 +235,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }, 500);
   });
 
+  // Tab functionality
   const tabButtons = document.querySelectorAll(".tab-btn");
   const tabContents = document.querySelectorAll(".section");
 
@@ -227,53 +263,115 @@ document.addEventListener("DOMContentLoaded", function () {
   const targetLangSelect = document.getElementById("targetLang");
 
   // Load all saved settings
-  browser.storage.local.get([
-    "geminiApiKey",
-    "geminiModel",
-    "lastSourceLang",
-    "lastTargetLang"
-  ]).then((result) => {
-    if (result.geminiApiKey) {
-      apiKeyInput.value = result.geminiApiKey;
-      console.log("API key loaded from storage");
-    } else {
-      console.log("No API key found in storage");
-      // Show a message to the user
-      document.getElementById("api-key-status").textContent =
-        "Please enter your Gemini API key and save settings before using the extension.";
-      document.getElementById("api-key-status").className = "status error";
-    }
+  browser.storage.local
+    .get([
+      "geminiApiKey",
+      "geminiModel",
+      "lastSourceLang",
+      "lastTargetLang",
+      "persistentTranslationEnabled",
+      "keyboardShortcut",
+      "translationTone",
+      "aiTone",
+    ])
+    .then((result) => {
+      if (result.geminiApiKey) {
+        apiKeyInput.value = result.geminiApiKey;
+        console.log("API key loaded from storage");
+      } else {
+        console.log("No API key found in storage");
+        // Show a message to the user
+        document.getElementById("api-key-status").textContent =
+          "Please enter your Gemini API key and save settings before using the extension.";
+        document.getElementById("api-key-status").className = "status error";
+      }
 
-    // Set default model if none is saved
-    const defaultModel = "gemini-1.5-flash";
-    const savedModel = result.geminiModel || defaultModel;
+      // Set default model if none is saved
+      const defaultModel = "gemini-1.5-flash";
+      const savedModel = result.geminiModel || defaultModel;
 
-    // Set the model in both selects
-    modelSelect.value = savedModel;
-    console.log("Model set to:", savedModel);
+      // Set the model in both selects
+      modelSelect.value = savedModel;
+      console.log("Model set to:", savedModel);
 
-    // Also set the AI model select to match
-    if (aiModelSelect) {
-      aiModelSelect.value = savedModel;
-    }
+      // Also set the AI model select to match
+      if (aiModelSelect) {
+        aiModelSelect.value = savedModel;
+      }
 
-    // Save the default model if none was saved before
-    if (!result.geminiModel) {
-      browser.storage.local.set({ geminiModel: defaultModel });
-    }
+      // Save the default model if none was saved before
+      if (!result.geminiModel) {
+        browser.storage.local.set({ geminiModel: defaultModel });
+      }
 
-    // Set source language if saved
-    if (result.lastSourceLang && sourceLangSelect) {
-      sourceLangSelect.value = result.lastSourceLang;
-      console.log("Source language set to:", result.lastSourceLang);
-    }
+      // Set source language if saved
+      if (result.lastSourceLang && sourceLangSelect) {
+        sourceLangSelect.value = result.lastSourceLang;
+        console.log("Source language set to:", result.lastSourceLang);
+      }
 
-    // Set target language if saved
-    if (result.lastTargetLang && targetLangSelect) {
-      targetLangSelect.value = result.lastTargetLang;
-      console.log("Target language set to:", result.lastTargetLang);
-    }
-  });
+      // Set target language if saved
+      if (result.lastTargetLang && targetLangSelect) {
+        targetLangSelect.value = result.lastTargetLang;
+        console.log("Target language set to:", result.lastTargetLang);
+      }
+
+      // Set translation tone if saved
+      const translationToneSelect = document.getElementById("translationTone");
+      if (result.translationTone && translationToneSelect) {
+        translationToneSelect.value = result.translationTone;
+        console.log("Translation tone set to:", result.translationTone);
+      }
+
+      // Set AI tone if saved
+      const aiToneSelect = document.getElementById("aiTone");
+      if (result.aiTone && aiToneSelect) {
+        aiToneSelect.value = result.aiTone;
+        console.log("AI tone set to:", result.aiTone);
+      }
+
+      // Load keyboard shortcut settings
+      if (result.keyboardShortcut) {
+        try {
+          const shortcutSettings = JSON.parse(result.keyboardShortcut);
+          console.log("Keyboard shortcut settings loaded:", shortcutSettings);
+
+          // Update UI with saved shortcut settings
+          const enableShortcutsCheckbox =
+            document.getElementById("enableShortcuts");
+          const shortcutShiftCheckbox =
+            document.getElementById("shortcutShift");
+          const shortcutCtrlCheckbox = document.getElementById("shortcutCtrl");
+          const shortcutAltCheckbox = document.getElementById("shortcutAlt");
+          const shortcutKeyInput = document.getElementById("shortcutKey");
+
+          if (enableShortcutsCheckbox)
+            enableShortcutsCheckbox.checked = shortcutSettings.enabled;
+          if (shortcutShiftCheckbox)
+            shortcutShiftCheckbox.checked = shortcutSettings.shift;
+          if (shortcutCtrlCheckbox)
+            shortcutCtrlCheckbox.checked = shortcutSettings.ctrl;
+          if (shortcutAltCheckbox)
+            shortcutAltCheckbox.checked = shortcutSettings.alt;
+          if (shortcutKeyInput) shortcutKeyInput.value = shortcutSettings.key;
+        } catch (error) {
+          console.error("Error parsing keyboard shortcut settings:", error);
+        }
+      }
+
+      // Make sure the keyboard shortcuts section is visible (regardless of window size)
+      const keyboardShortcutsSection = document.getElementById(
+        "keyboardShortcutsSection"
+      );
+      if (keyboardShortcutsSection) {
+        // Only hide on actual mobile devices, not small windows
+        if (isMobileDevice()) {
+          keyboardShortcutsSection.style.display = "none";
+        } else {
+          keyboardShortcutsSection.style.display = "block";
+        }
+      }
+    });
 
   // Save settings
   document.getElementById("saveApiKey").addEventListener("click", () => {
@@ -318,6 +416,12 @@ document.addEventListener("DOMContentLoaded", function () {
     sourceLangSelect.addEventListener("change", () => {
       browser.storage.local.set({ lastSourceLang: sourceLangSelect.value });
       console.log("Source language saved:", sourceLangSelect.value);
+
+      // If we're in text translation mode, retranslate with the new language
+      const sourceText = document.getElementById("sourceText");
+      if (sourceText && sourceText.value.trim() !== "") {
+        translateText();
+      }
     });
   }
 
@@ -325,6 +429,12 @@ document.addEventListener("DOMContentLoaded", function () {
     targetLangSelect.addEventListener("change", () => {
       browser.storage.local.set({ lastTargetLang: targetLangSelect.value });
       console.log("Target language saved:", targetLangSelect.value);
+
+      // If we're in text translation mode, retranslate with the new language
+      const sourceText = document.getElementById("sourceText");
+      if (sourceText && sourceText.value.trim() !== "") {
+        translateText();
+      }
     });
   }
 
@@ -336,202 +446,130 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Function to translate text
-  function translateText() {
-    const inputText = document.getElementById("sourceText").value.trim();
-    const sourceLanguage = document.getElementById("sourceLang").value;
-    const targetLanguage = document.getElementById("targetLang").value;
-    const outputText = document.getElementById("translatedText");
-
-    // Save the language selections
-    browser.storage.local.set({
-      lastSourceLang: sourceLanguage,
-      lastTargetLang: targetLanguage
-    });
-    console.log("Languages saved from text translation:", sourceLanguage, targetLanguage);
-
-    if (!inputText) {
-      outputText.textContent = "Translation will appear here";
-      return;
-    }
-
-    // Check if API key is available
-    browser.storage.local
-      .get(["geminiApiKey", "geminiModel"])
-      .then((result) => {
-        if (!result.geminiApiKey) {
-          outputText.value = "Please enter your Gemini API key first.";
-          return;
-        }
-
-        outputText.value = "Translating...";
-
-        // Create a prompt for translation
-        let prompt = `Translate the following text`;
-
-        if (sourceLanguage !== "auto") {
-          prompt += ` from ${getLanguageName(sourceLanguage)}`;
-        }
-
-        prompt += ` to ${getLanguageName(
-          targetLanguage
-        )}. Return ONLY the translated text without any explanations, options, or additional information:\n\n"${inputText}"`;
-
-        // Call the Gemini API directly
-        // Make sure model name is in the correct format
-        let modelName = result.geminiModel || "gemini-pro";
-
-        // Map friendly names to API model names if needed
-        const modelMap = {
-          "Gemini 1.5 Flash": "gemini-1.5-flash",
-          "Gemini Pro": "gemini-pro",
-          "Gemini 1.0 Pro": "gemini-1.0-pro",
-          "Gemini Pro Vision": "gemini-pro-vision",
-          "Gemini 2.0 Flash": "gemini-1.5-flash", // Fallback to 1.5 Flash
-          "Gemini 2.5 Pro Preview 03-25": "gemini-pro", // Fallback to Pro
-          "Gemini 2.5 Flash Preview 04-17": "gemini-1.5-flash", // Fallback to 1.5 Flash
-        };
-
-        if (modelMap[modelName]) {
-          modelName = modelMap[modelName];
-          console.log(
-            `Mapped model name from ${result.geminiModel} to ${modelName}`
-          );
-        }
-
-        const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent`;
-        console.log(`Using Gemini model for translation: ${modelName}`);
-
-        fetch(`${apiUrl}?key=${result.geminiApiKey}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: prompt,
-                  },
-                ],
-              },
-            ],
-            generationConfig: {
-              temperature: 0.1,
-              maxOutputTokens: 1024,
-            },
-          }),
-        })
-          .then((response) => {
-            console.log("API response status:", response.status);
-            if (!response.ok) {
-              return response.json().then((errorData) => {
-                const errorMessage =
-                  errorData.error?.message || response.statusText;
-                throw new Error(errorMessage);
-              });
-            }
-            return response.json();
-          })
-          .then((data) => {
-            console.log(
-              "API response data:",
-              JSON.stringify(data).substring(0, 200) + "..."
-            );
-
-            if (
-              data.candidates &&
-              data.candidates[0] &&
-              data.candidates[0].content &&
-              data.candidates[0].content.parts &&
-              data.candidates[0].content.parts[0]
-            ) {
-              let translation = data.candidates[0].content.parts[0].text;
-
-              // Clean up the translation (remove quotes, asterisks, and other formatting)
-              translation = translation.replace(/^["']|["']$/g, ""); // Remove quotes
-              translation = translation.replace(/\*\*(.*?)\*\*/g, "$1"); // Remove bold formatting
-              translation = translation.replace(/\*(.*?)\*/g, "$1"); // Remove italic formatting
-              translation = translation.replace(/Option \d+.*?:/g, ""); // Remove option labels
-              translation = translation.replace(
-                /^(Here's|The) (translation|translated).*?:/i,
-                ""
-              ); // Remove intro phrases
-              translation = translation.trim();
-
-              outputText.value = translation;
-            } else if (data.error) {
-              // Handle API error
-              outputText.value = "Translation failed: " + data.error.message;
-              console.error("API error:", data.error);
-            } else {
-              console.error("Unexpected API response format:", data);
-              outputText.value =
-                "Translation failed. Please try again with a different model.";
-            }
-          })
-          .catch((error) => {
-            console.error("Translation error:", error);
-
-            // Check for specific error types
-            if (error.message.includes("quota")) {
-              outputText.value =
-                "Error: API quota exceeded. Please try a different model or check your API key.";
-            } else if (error.message.includes("not found")) {
-              outputText.value =
-                "Error: Selected model not available. Please try a different model.";
-            } else if (error.message.includes("invalid")) {
-              outputText.value =
-                "Error: Invalid API key. Please check your API key.";
-            } else {
-              outputText.value = "Error: " + error.message;
-            }
-          });
+  // Save translation tone selection when it changes
+  const translationToneSelect = document.getElementById("translationTone");
+  if (translationToneSelect) {
+    translationToneSelect.addEventListener("change", () => {
+      browser.storage.local.set({
+        translationTone: translationToneSelect.value,
       });
+      console.log("Translation tone saved:", translationToneSelect.value);
+
+      // If we're in text translation mode, retranslate with the new tone
+      const sourceText = document.getElementById("sourceText");
+      if (sourceText && sourceText.value.trim() !== "") {
+        translateText();
+      }
+    });
   }
 
-  // Add input event listener for auto-translation
-  const inputTextArea = document.getElementById("sourceText");
-  let translationTimeout;
+  // Save AI tone selection when it changes
+  const aiToneSelect = document.getElementById("aiTone");
+  if (aiToneSelect) {
+    aiToneSelect.addEventListener("change", () => {
+      browser.storage.local.set({ aiTone: aiToneSelect.value });
+      console.log("AI tone saved:", aiToneSelect.value);
+    });
+  }
 
-  inputTextArea.addEventListener("input", () => {
-    // Clear previous timeout
-    clearTimeout(translationTimeout);
+  // Handle keyboard shortcut settings
+  const saveShortcutButton = document.getElementById("saveShortcut");
+  if (saveShortcutButton) {
+    saveShortcutButton.addEventListener("click", () => {
+      const enableShortcuts =
+        document.getElementById("enableShortcuts").checked;
+      const shortcutShift = document.getElementById("shortcutShift").checked;
+      const shortcutCtrl = document.getElementById("shortcutCtrl").checked;
+      const shortcutAlt = document.getElementById("shortcutAlt").checked;
+      const shortcutKey = document
+        .getElementById("shortcutKey")
+        .value.toUpperCase();
 
-    // Set a new timeout to translate after 1 second of inactivity
-    translationTimeout = setTimeout(translateText, 1000);
-  });
-
-  // Add clear text functionality
-  document.getElementById("clear-text").addEventListener("click", () => {
-    document.getElementById("sourceText").value = "";
-    document.getElementById("translatedText").value =
-      "Translation will appear here";
-  });
-
-  // Add copy text functionality
-  document.getElementById("copy-text").addEventListener("click", () => {
-    const text = document.getElementById("translatedText").value;
-    if (
-      text &&
-      text !== "Translation will appear here" &&
-      text !== "Translating..."
-    ) {
-      navigator.clipboard.writeText(text).then(() => {
-        // Show a temporary "Copied!" message
-        const outputArea = document.querySelector(".textarea-container");
-        const notification = document.createElement("div");
-        notification.className = "copy-notification";
-        notification.textContent = "Copied!";
-        outputArea.appendChild(notification);
+      // Validate the key input
+      if (!shortcutKey || shortcutKey.length !== 1) {
+        const statusElement = document.getElementById("shortcut-status");
+        statusElement.textContent =
+          "Please enter a valid key (single character)";
+        statusElement.className = "shortcut-status error";
 
         setTimeout(() => {
-          notification.remove();
-        }, 2000);
+          statusElement.textContent = "";
+          statusElement.className = "shortcut-status";
+        }, 3000);
+
+        return;
+      }
+
+      // Create the shortcut object
+      const shortcutSettings = {
+        enabled: enableShortcuts,
+        shift: shortcutShift,
+        ctrl: shortcutCtrl,
+        alt: shortcutAlt,
+        key: shortcutKey,
+      };
+
+      // Save the shortcut settings
+      browser.runtime
+        .sendMessage({
+          action: "updateKeyboardShortcut",
+          shortcut: shortcutSettings,
+        })
+        .then(() => {
+          const statusElement = document.getElementById("shortcut-status");
+          statusElement.textContent = "Keyboard shortcut saved!";
+          statusElement.className = "shortcut-status";
+
+          setTimeout(() => {
+            statusElement.textContent = "";
+          }, 3000);
+        })
+        .catch((error) => {
+          console.error("Error saving keyboard shortcut:", error);
+
+          const statusElement = document.getElementById("shortcut-status");
+          statusElement.textContent = "Error saving shortcut: " + error.message;
+          statusElement.className = "shortcut-status error";
+
+          setTimeout(() => {
+            statusElement.textContent = "";
+            statusElement.className = "shortcut-status";
+          }, 3000);
+        });
+    });
+  }
+
+  // Handle shortcut key input validation
+  const shortcutKeyInput = document.getElementById("shortcutKey");
+  if (shortcutKeyInput) {
+    shortcutKeyInput.addEventListener("input", () => {
+      // Force uppercase and limit to 1 character
+      shortcutKeyInput.value = shortcutKeyInput.value.toUpperCase().slice(0, 1);
+    });
+  }
+
+  // Handle enable/disable shortcuts checkbox
+  const enableShortcutsCheckbox = document.getElementById("enableShortcuts");
+  if (enableShortcutsCheckbox) {
+    enableShortcutsCheckbox.addEventListener("change", () => {
+      const shortcutControls = document.querySelectorAll(
+        ".shortcut-key-container input, .shortcut-key-container button"
+      );
+
+      // Enable/disable the shortcut controls based on checkbox state
+      shortcutControls.forEach((control) => {
+        control.disabled = !enableShortcutsCheckbox.checked;
       });
-    }
-  });
+    });
+
+    // Initialize state on page load
+    const shortcutControls = document.querySelectorAll(
+      ".shortcut-key-container input, .shortcut-key-container button"
+    );
+    shortcutControls.forEach((control) => {
+      control.disabled = !enableShortcutsCheckbox.checked;
+    });
+  }
 
   // Helper function to get language name
   function getLanguageName(langCode) {
@@ -549,133 +587,73 @@ document.addEventListener("DOMContentLoaded", function () {
 
     return languages[langCode] || langCode;
   }
-
-  // Translate page button click handler
-  document
-    .getElementById("translate-page-button")
-    .addEventListener("click", () => {
-      const targetLanguage = document.getElementById("targetLang").value;
-
-      // Save the target language selection
-      browser.storage.local.set({ lastTargetLang: targetLanguage });
-      console.log("Target language saved for page translation:", targetLanguage);
-
-      // If we're in simple mode, make sure the page translation mode is visible
-      const container = document.getElementById("translatePopup");
-      if (container && container.classList.contains("simple-mode")) {
-        const pageTranslationMode = document.getElementById("pageTranslationMode");
-        if (pageTranslationMode) {
-          pageTranslationMode.classList.remove("hidden");
-        }
-      }
-
-      // Check if API key is available
-      browser.storage.local
-        .get(["geminiApiKey", "geminiModel"])
-        .then((result) => {
-          if (!result.geminiApiKey) {
-            alert(
-              "Please enter your Gemini API key first in the settings tab."
-            );
-            return;
-          }
-
-          // Send message to content script to get page content
-          browser.tabs
-            .query({ active: true, currentWindow: true })
-            .then((tabs) => {
-              if (!tabs || tabs.length === 0) {
-                alert("No active tab found. Please try again.");
-                return;
-              }
-
-              browser.tabs
-                .sendMessage(tabs[0].id, {
-                  action: "translate",
-                  targetLanguage: targetLanguage,
-                  apiKey: result.geminiApiKey,
-                  model: result.geminiModel || "gemini-pro", // Default to gemini-pro if not set
-                })
-
-                .catch((error) => {
-                  alert("Translation failed: " + error.message);
-                });
-            });
-        });
-    });
-
-  // Ask question button click handler
+});
+// Function to initialize Ask AI functionality
+function initializeAskAI() {
   const questionForm = document.getElementById("questionForm");
+  const questionInput = document.getElementById("questionInput");
+  const sendBtn = document.getElementById("sendBtn");
+  const conversationBox = document.getElementById("conversationBox");
+  const aiResponseLang = document.getElementById("aiResponseLang");
+  const aiTone = document.getElementById("aiTone");
+  const clearConversationBtn = document.getElementById("clearConversation");
+  const aiModelSelect = document.getElementById("ai-model");
+
+  // Enable/disable send button based on input
+  if (questionInput) {
+    questionInput.addEventListener("input", () => {
+      sendBtn.disabled = questionInput.value.trim() === "";
+    });
+  }
+
+  // Handle form submission
   if (questionForm) {
     questionForm.addEventListener("submit", (e) => {
       e.preventDefault();
 
-      const questionInput = document.getElementById("questionInput");
       const question = questionInput.value.trim();
-      if (!question) {
-        return;
-      }
+      if (!question) return;
 
-      // Get the selected AI model
-      const selectedAiModel = document.getElementById("ai-model").value;
-      console.log("Selected AI model:", selectedAiModel);
-
-      // Check if API key is available
+      // Get API key and model
       browser.storage.local
         .get(["geminiApiKey", "geminiModel"])
         .then((result) => {
           if (!result.geminiApiKey) {
-            // Show error in conversation box
-            const conversationBox = document.getElementById("conversationBox");
-
-            // Clear any existing messages
-            if (conversationBox.querySelector(".empty-conversation")) {
-              conversationBox.innerHTML = "";
-            }
-
-            // Add error message
-            const errorMessageDiv = document.createElement("div");
-            errorMessageDiv.className = "message ai-message";
-            errorMessageDiv.textContent =
-              "Please enter your Gemini API key first in the settings tab.";
-            conversationBox.appendChild(errorMessageDiv);
+            // Show error if no API key is set
+            addMessageToConversation(
+              "Please set your Gemini API key in the settings first.",
+              "error"
+            );
             return;
           }
 
-          // Add user message to conversation
-          const conversationBox = document.getElementById("conversationBox");
+          // Add user question to conversation
+          addMessageToConversation(question, "user");
 
-          // Check if the conversation box has the default empty message
-          if (conversationBox.querySelector(".empty-conversation")) {
-            // Clear the empty conversation message
-            conversationBox.innerHTML = "";
-          }
-
-          // Add new message to existing conversation
-          const userMessageDiv = document.createElement("div");
-          userMessageDiv.className = "message user-message";
-          userMessageDiv.textContent = question;
-          conversationBox.appendChild(userMessageDiv);
-
-          const aiMessageDiv = document.createElement("div");
-          aiMessageDiv.className = "message ai-message";
-          aiMessageDiv.textContent = "Thinking...";
-          conversationBox.appendChild(aiMessageDiv);
-
-          // Scroll to the bottom of the conversation
-          conversationBox.scrollTop = conversationBox.scrollHeight;
-
-          // Clear the input
+          // Clear input
           questionInput.value = "";
+          sendBtn.disabled = true;
 
-          // Send message to content script to get page content and ask question
+          // Add loading indicator
+          const loadingId = addLoadingIndicator();
+
+          // Get the selected model and response language
+          const selectedModel = aiModelSelect
+            ? aiModelSelect.value
+            : result.geminiModel;
+          const responseLang = aiResponseLang ? aiResponseLang.value : "en";
+          const tone = aiTone ? aiTone.value : "neutral";
+
+          // Send message to content script to ask Gemini
           browser.tabs
             .query({ active: true, currentWindow: true })
             .then((tabs) => {
-              if (!tabs || tabs.length === 0) {
-                const aiMessage = conversationBox.querySelector(".ai-message");
-                aiMessage.textContent =
-                  "No active tab found. Please try again.";
+              if (tabs.length === 0) {
+                removeLoadingIndicator(loadingId);
+                addMessageToConversation(
+                  "Error: Could not connect to the current tab.",
+                  "error"
+                );
                 return;
               }
 
@@ -684,89 +662,372 @@ document.addEventListener("DOMContentLoaded", function () {
                   action: "askQuestion",
                   question: question,
                   apiKey: result.geminiApiKey,
-                  model: selectedAiModel || result.geminiModel || "gemini-pro", // Use selected model, fallback to saved model, then default
+                  model: selectedModel,
+                  responseLang: responseLang,
+                  tone: tone,
                 })
                 .then((response) => {
-                  // Get the last AI message (the "Thinking..." message)
-                  const aiMessages =
-                    conversationBox.querySelectorAll(".ai-message");
-                  const lastAiMessage = aiMessages[aiMessages.length - 1];
+                  removeLoadingIndicator(loadingId);
 
-                  if (response && response.success) {
-                    lastAiMessage.textContent = response.answer;
-                    console.log(
-                      "Answer received:",
-                      response.answer.substring(0, 50) + "..."
-                    );
-
-                    // Add click event to copy the answer
-                    lastAiMessage.addEventListener("click", function () {
-                      navigator.clipboard
-                        .writeText(this.textContent)
-                        .then(() => {
-                          // Show a temporary "Copied!" message
-                          const notification = document.createElement("div");
-                          notification.className = "copy-notification";
-                          notification.textContent = "Copied!";
-                          this.appendChild(notification);
-
-                          setTimeout(() => {
-                            notification.remove();
-                          }, 2000);
-                        });
-                    });
+                  if (response.success) {
+                    addMessageToConversation(response.answer, "ai");
                   } else {
-                    lastAiMessage.textContent =
-                      "Failed to get answer: " +
-                      (response ? response.error : "Unknown error");
-                    console.error(
-                      "Failed to get answer:",
-                      response ? response.error : "Unknown error"
+                    addMessageToConversation(
+                      `Error: ${response.error || "Unknown error"}`,
+                      "error"
                     );
                   }
-
-                  // Scroll to the bottom of the conversation
-                  conversationBox.scrollTop = conversationBox.scrollHeight;
                 })
                 .catch((error) => {
-                  // Get the last AI message (the "Thinking..." message)
-                  const aiMessages =
-                    conversationBox.querySelectorAll(".ai-message");
-                  const lastAiMessage = aiMessages[aiMessages.length - 1];
-
-                  lastAiMessage.textContent = "Error: " + error.message;
-
-                  // Scroll to the bottom of the conversation
-                  conversationBox.scrollTop = conversationBox.scrollHeight;
+                  removeLoadingIndicator(loadingId);
+                  addMessageToConversation(
+                    `Error: ${
+                      error.message || "Could not connect to the page."
+                    }`,
+                    "error"
+                  );
                 });
             });
         });
     });
   }
 
-  // Enable/disable send button based on input
-  const questionInput = document.getElementById("questionInput");
-  const sendBtn = document.getElementById("sendBtn");
-
-  if (questionInput && sendBtn) {
-    questionInput.addEventListener("input", () => {
-      sendBtn.disabled = questionInput.value.trim() === "";
+  // Clear conversation
+  if (clearConversationBtn) {
+    clearConversationBtn.addEventListener("click", () => {
+      conversationBox.innerHTML = `
+        <div class="empty-conversation">
+          Ask any question to start a conversation
+        </div>
+      `;
     });
   }
 
-  // Clear conversation button functionality
-  const clearConversationBtn = document.getElementById("clearConversation");
-  if (clearConversationBtn) {
-    clearConversationBtn.addEventListener("click", () => {
-      const conversationBox = document.getElementById("conversationBox");
-      if (conversationBox) {
-        // Reset to empty state
-        conversationBox.innerHTML = `
-          <div class="empty-conversation">
-            Ask a question to start a conversation
-          </div>
-        `;
+  // Function to add a message to the conversation
+  function addMessageToConversation(message, type) {
+    // Remove empty conversation placeholder if present
+    const emptyConversation = conversationBox.querySelector(
+      ".empty-conversation"
+    );
+    if (emptyConversation) {
+      emptyConversation.remove();
+    }
+
+    const messageElement = document.createElement("div");
+    messageElement.className = `message ${type}-message`;
+
+    if (type === "ai" || type === "error") {
+      // For AI responses, preserve formatting
+      message = message.replace(/\n/g, "<br>");
+
+      // Format code blocks
+      message = message.replace(
+        /```([a-z]*)\n([\s\S]*?)\n```/g,
+        '<pre class="code-block"><code>$2</code></pre>'
+      );
+
+      // Format inline code
+      message = message.replace(
+        /`([^`]+)`/g,
+        '<code class="inline-code">$1</code>'
+      );
+
+      messageElement.innerHTML = message;
+    } else {
+      // For user messages, use textContent for security
+      messageElement.textContent = message;
+    }
+
+    conversationBox.appendChild(messageElement);
+
+    // Scroll to the bottom
+    conversationBox.scrollTop = conversationBox.scrollHeight;
+  }
+
+  // Function to add a loading indicator
+  function addLoadingIndicator() {
+    const loadingId = "loading-" + Date.now();
+    const loadingElement = document.createElement("div");
+    loadingElement.className = "message ai-message loading";
+    loadingElement.id = loadingId;
+    loadingElement.innerHTML = `
+      <div class="loading-dots">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+    `;
+    conversationBox.appendChild(loadingElement);
+    conversationBox.scrollTop = conversationBox.scrollHeight;
+    return loadingId;
+  }
+
+  // Function to remove loading indicator
+  function removeLoadingIndicator(loadingId) {
+    const loadingElement = document.getElementById(loadingId);
+    if (loadingElement) {
+      loadingElement.remove();
+    }
+  }
+}
+
+// Function to call the Gemini API directly from the popup
+async function callGeminiAPI(prompt, apiKey, model = "gemini-pro") {
+  // Map friendly names to API model names if needed
+  const modelMap = {
+    "Gemini 1.5 Flash": "gemini-1.5-flash",
+    "Gemini Pro": "gemini-pro",
+    "Gemini 1.0 Pro": "gemini-1.0-pro",
+    "Gemini Pro Vision": "gemini-pro-vision",
+    "Gemini 2.0 Flash": "gemini-2.0-flash",
+    "Gemini 2.5 Flash Preview 04-17": "gemini-2.5-flash-preview-04-17",
+    "Gemini 2.5 Pro Preview 03-25": "gemini-2.5-pro-preview-03-25",
+  };
+
+  const modelName = modelMap[model] || model;
+  const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent`;
+
+  const requestData = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature: 0.2,
+      maxOutputTokens: 2048,
+      topK: 40,
+      topP: 0.95,
+    },
+  };
+
+  try {
+    const response = await fetch(`${apiUrl}?key=${apiKey}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      const errorMessage = errorData.error?.message || response.statusText;
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+
+    if (
+      data.candidates &&
+      data.candidates[0] &&
+      data.candidates[0].content &&
+      data.candidates[0].content.parts
+    ) {
+      return data.candidates[0].content.parts[0].text;
+    } else {
+      throw new Error("Unexpected API response format");
+    }
+  } catch (error) {
+    console.error("Gemini API error:", error);
+    throw error;
+  }
+}
+
+// Add event listener for source text input to enable real-time translation
+document.addEventListener("DOMContentLoaded", function () {
+  console.log("DOM content loaded, initializing translation functionality");
+
+  const sourceText = document.getElementById("sourceText");
+  const clearTextBtn = document.getElementById("clear-text");
+  const copyTextBtn = document.getElementById("copy-text");
+
+  if (sourceText) {
+    // Add debounce to avoid too many API calls
+    let debounceTimer;
+    sourceText.addEventListener("input", () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        // Auto-translate on input
+        translateText();
+        console.log("Translating text:", sourceText.value);
+      }, 500); // Reduced to 500ms for faster response
+    });
+  }
+
+  // Clear text button functionality
+  if (clearTextBtn) {
+    clearTextBtn.addEventListener("click", () => {
+      if (sourceText) {
+        sourceText.value = "";
+        document.getElementById("translatedText").value = "";
+      }
+    });
+  }
+
+  // Copy text button functionality
+  if (copyTextBtn) {
+    copyTextBtn.addEventListener("click", () => {
+      const translatedText = document.getElementById("translatedText");
+      if (translatedText) {
+        // Use modern Clipboard API if available
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(translatedText.value)
+            .then(() => {
+              // Show feedback
+              const originalText = copyTextBtn.innerHTML;
+              copyTextBtn.innerHTML = '<span class="material-icons">check</span>';
+              setTimeout(() => {
+                copyTextBtn.innerHTML = originalText;
+              }, 2000);
+            })
+            .catch(err => {
+              console.error('Could not copy text: ', err);
+              // Fallback to old method if clipboard API fails
+              translatedText.select();
+              document.execCommand("copy");
+            });
+        } else {
+          // Fallback for browsers that don't support Clipboard API
+          translatedText.select();
+          document.execCommand("copy");
+
+          // Show feedback
+          const originalText = copyTextBtn.innerHTML;
+          copyTextBtn.innerHTML = '<span class="material-icons">check</span>';
+          setTimeout(() => {
+            copyTextBtn.innerHTML = originalText;
+          }, 2000);
+        }
       }
     });
   }
 });
+// Override the translateText function to use the direct translation
+function translateText() {
+  // Get the text to translate
+  const sourceText = document.getElementById("sourceText").value.trim();
+  const translatedTextArea = document.getElementById("translatedText");
+
+  if (!sourceText) {
+    if (translatedTextArea) translatedTextArea.value = "";
+    return;
+  }
+
+  console.log("Starting translation process");
+
+  // Show loading indicator with animation
+  if (translatedTextArea) {
+    translatedTextArea.value = "Translating...";
+    translatedTextArea.classList.add("translating");
+  }
+
+  browser.storage.local
+    .get(["geminiApiKey", "geminiModel", "translationTone"])
+    .then((result) => {
+      if (!result.geminiApiKey) {
+        if (translatedTextArea) {
+          translatedTextArea.value = "Error: Please set your Gemini API key in the settings first.";
+          translatedTextArea.classList.remove("translating");
+          translatedTextArea.classList.add("error");
+
+          // Remove error class after 3 seconds
+          setTimeout(() => {
+            translatedTextArea.classList.remove("error");
+          }, 3000);
+        }
+        return;
+      }
+
+      // Get the source and target languages
+      const targetLang = document.getElementById("targetLang").value;
+      const sourceLang = document.getElementById("sourceLang").value;
+      const tone = result.translationTone || "neutral";
+
+      // Use the most efficient model available
+      const model = result.geminiModel || "gemini-2.0-flash";
+
+      // Send message to translate the current page
+      browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+        if (tabs.length === 0) {
+          if (translatedTextArea) {
+            translatedTextArea.value = "Error: Could not connect to the current tab.";
+            translatedTextArea.classList.remove("translating");
+            translatedTextArea.classList.add("error");
+
+            // Remove error class after 3 seconds
+            setTimeout(() => {
+              translatedTextArea.classList.remove("error");
+            }, 3000);
+          }
+          return;
+        }
+
+        browser.tabs
+          .sendMessage(tabs[0].id, {
+            action: "translateText",
+            targetLanguage: targetLang,
+            sourceLanguage: sourceLang,
+            apiKey: result.geminiApiKey,
+            model: model,
+            sourceText: sourceText,
+            tone: tone,
+          })
+          .then((response) => {
+            if (translatedTextArea) {
+              translatedTextArea.classList.remove("translating");
+
+              if (response && response.success && response.translatedText) {
+                translatedTextArea.value = response.translatedText;
+                translatedTextArea.classList.add("success");
+
+                // Remove success class after 1 second
+                setTimeout(() => {
+                  translatedTextArea.classList.remove("success");
+                }, 1000);
+              } else if (response && response.error) {
+                translatedTextArea.value = `Error: ${response.error}`;
+                translatedTextArea.classList.add("error");
+
+                // Remove error class after 3 seconds
+                setTimeout(() => {
+                  translatedTextArea.classList.remove("error");
+                }, 3000);
+              } else {
+                translatedTextArea.value = "Error: Translation failed.";
+                translatedTextArea.classList.add("error");
+
+                // Remove error class after 3 seconds
+                setTimeout(() => {
+                  translatedTextArea.classList.remove("error");
+                }, 3000);
+              }
+            }
+          })
+          .catch((error) => {
+            console.error("Error sending translation message:", error);
+
+            if (translatedTextArea) {
+              translatedTextArea.value = "Error: Could not send translation request to the page.";
+              translatedTextArea.classList.remove("translating");
+              translatedTextArea.classList.add("error");
+
+              // Remove error class after 3 seconds
+              setTimeout(() => {
+                translatedTextArea.classList.remove("error");
+              }, 3000);
+            }
+          });
+      });
+    })
+    .catch((error) => {
+      console.error("Error getting settings:", error);
+
+      if (translatedTextArea) {
+        translatedTextArea.value = "Error: Could not load translation settings.";
+        translatedTextArea.classList.remove("translating");
+        translatedTextArea.classList.add("error");
+
+        // Remove error class after 3 seconds
+        setTimeout(() => {
+          translatedTextArea.classList.remove("error");
+        }, 3000);
+      }
+    });
+}

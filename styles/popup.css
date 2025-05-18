@@ -3,10 +3,11 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
   line-height: 1.5;
   color: #333;
   width: 350px;
@@ -14,6 +15,7 @@ body {
   padding: 0;
   background-color: #ffffff;
   color: #202124;
+    border-radius: 0.5rem;
 }
 
 .hidden {
@@ -59,7 +61,6 @@ body {
   border-radius: 0.5rem;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   overflow: hidden;
-  border: 1px solid #e5e7eb;
   z-index: 50;
 }
 
@@ -349,6 +350,43 @@ Let's modify it to use a different approach.
   outline: none;
 }
 
+/* Tone selector */
+.tone-selector {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  background-color: #f9fafb;
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.tone-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #4b5563;
+  margin-right: 0.5rem;
+  white-space: nowrap;
+}
+
+.tone-select {
+  font-size: 0.75rem;
+  border: none;
+  background-color: transparent;
+  color: #4b5563;
+  flex: 1;
+  padding: 0.25rem;
+}
+
+.tone-select:focus {
+  outline: none;
+}
+
+@media (min-width: 768px) {
+  .tone-label, .tone-select {
+    font-size: 0.875rem;
+  }
+}
+
 .switch-btn {
   padding: 0.375rem;
   border-radius: 9999px;
@@ -400,6 +438,51 @@ Let's modify it to use a different approach.
   }
 }
 
+/* Persistent translation option */
+.persistent-translation-option {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  font-size: 0.75rem;
+  color: #1e40af;
+  position: relative;
+}
+
+.persistent-checkbox {
+  margin-right: 0.5rem;
+  cursor: pointer;
+}
+
+.tooltip {
+  position: relative;
+  display: inline-block;
+  margin-left: 0.5rem;
+  cursor: help;
+}
+
+.tooltip .tooltip-text {
+  visibility: hidden;
+  width: 200px;
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 0.7rem;
+}
+
+.tooltip:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
 .translate-page-action {
   width: 100%;
   padding: 0.5rem;
@@ -448,12 +531,227 @@ Let's modify it to use a different approach.
 
 .translated-textarea {
   background-color: #f9fafb;
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+
+/* Translation status styles */
+.translated-textarea.translating {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+  color: #6b7280;
+  animation: pulse 1.5s infinite;
+}
+
+.translated-textarea.error {
+  background-color: #fee2e2;
+  border-color: #ef4444;
+  color: #b91c1c;
+}
+
+.translated-textarea.success {
+  background-color: #ecfdf5;
+  border-color: #10b981;
+  color: #047857;
 }
 
 .textarea-actions {
   display: flex;
   justify-content: flex-end;
   margin-top: 0.25rem;
+}
+
+/* Text area with button */
+.textarea-with-button {
+  position: relative;
+  width: 100%;
+}
+
+.copy-btn-inside, .clear-text {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 3px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.copy-btn-inside:hover, .clear-text:hover {
+  opacity: 1;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.material-icons {
+  font-size: 18px;
+  color: #555;
+}
+
+/* Ask AI section styles */
+.conversation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.ai-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.clear-conversation-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  color: #6b7280;
+}
+
+.clear-conversation-btn:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.conversation-container {
+  margin-bottom: 0.75rem;
+}
+
+.conversation-box {
+  height: 200px;
+  overflow-y: auto;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  background-color: #f9fafb;
+  margin-bottom: 0.75rem;
+}
+
+.empty-conversation {
+  color: #6b7280;
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.message {
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  max-width: 85%;
+}
+
+.user-message {
+  background-color: #e5e7eb;
+  color: #111827;
+  align-self: flex-end;
+  margin-left: auto;
+}
+
+.ai-message {
+  background-color: #dbeafe;
+  color: #1e40af;
+  align-self: flex-start;
+}
+
+.error-message {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  align-self: flex-start;
+}
+
+.question-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.question-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.question-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px #3b82f6;
+}
+
+.send-btn {
+  padding: 0.5rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.send-btn:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.send-btn:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Loading indicator */
+.loading-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  background-color: #1e40af;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* Code formatting in AI responses */
+.code-block {
+  background-color: #f3f4f6;
+  border-radius: 0.25rem;
+  padding: 0.5rem;
+  margin: 0.5rem 0;
+  overflow-x: auto;
+  font-family: monospace;
+  white-space: pre;
+}
+
+.inline-code {
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: monospace;
 }
 
 .voice-btn {
@@ -469,6 +767,38 @@ Let's modify it to use a different approach.
   background-color: #f3f4f6;
 }
 
+/* Styles for textarea with button inside */
+.textarea-with-button {
+  position: relative;
+  width: 100%;
+}
+
+.textarea-with-button .translated-textarea {
+  width: 100%;
+  padding-right: 40px; /* Make room for the button */
+}
+
+.copy-btn-inside {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border: none;
+  border-radius: 4px;
+  padding: 4px;
+  cursor: pointer;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.copy-btn-inside:hover {
+  background-color: #2563eb;
+  color: white;
+}
+
 /* AI Question Section */
 .conversation-header {
   display: flex;
@@ -476,6 +806,12 @@ Let's modify it to use a different approach.
   align-items: center;
   margin-bottom: 0.5rem;
   padding: 0 0.25rem;
+}
+
+.ai-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .conversation-header h4 {
@@ -778,3 +1114,389 @@ Let's modify it to use a different approach.
 .api-key-status.error {
   color: #dc2626;
 }
+.status{
+  font-size: 13px;
+  color: green;
+  text-align: center;
+}
+.status.error{
+  font-size: 13px;
+  color: red;
+  text-align: center;
+}
+
+/* Settings Section */
+.settings-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Video Translate Section */
+.video-translate-header {
+  margin-bottom: 1rem;
+}
+
+.video-translate-header h4 {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin: 0;
+}
+
+.video-translate-options {
+  margin-bottom: 1rem;
+}
+
+.option-group {
+  margin-bottom: 0.75rem;
+}
+
+.toggle-option {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.toggle-checkbox {
+  margin-right: 0.5rem;
+}
+
+.toggle-label {
+  font-size: 0.75rem;
+  color: #4b5563;
+}
+
+.language-selector {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.language-label {
+  font-size: 0.75rem;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+  color: #4b5563;
+  min-width: 70px;
+}
+
+.display-options {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.display-label {
+  font-size: 0.75rem;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+  color: #4b5563;
+  min-width: 70px;
+}
+
+.display-select {
+  flex-grow: 1;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid #d1d5db;
+  background-color: white;
+  color: #4b5563;
+  font-size: 0.75rem;
+}
+
+.video-translate-info {
+  background-color: #f3f4f6;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+}
+
+.info-note {
+  display: flex;
+  align-items: flex-start;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+}
+
+.note-icon {
+  margin-right: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.save-settings-btn {
+  width: 100%;
+  padding: 0.5rem;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.save-settings-btn:hover {
+  background-color: #1d4ed8;
+}
+
+/* YouTube Subtitles Section (in settings) */
+.youtube-subtitles-section {
+  margin-top: 1rem;
+}
+
+.youtube-subtitles-container {
+  padding: 0.75rem;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.youtube-subtitles-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.youtube-subtitles-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin: 0;
+}
+
+.youtube-subtitles-toggle {
+  display: flex;
+  align-items: center;
+}
+
+.youtube-subtitles-options {
+  margin-top: 0.75rem;
+}
+
+.subtitle-display-mode {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.subtitle-mode-label {
+  font-size: 0.75rem;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+  color: #4b5563;
+}
+
+.subtitle-mode-select {
+  flex-grow: 1;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid #d1d5db;
+  background-color: white;
+  color: #4b5563;
+  font-size: 0.75rem;
+}
+
+/* شخصی‌سازی زیرنویس */
+.subtitle-customization-section {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.customization-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin: 0 0 0.75rem 0;
+  text-align: center;
+}
+
+.customization-option {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.customization-option label {
+  font-size: 0.75rem;
+  margin-right: 0.5rem;
+  color: #4b5563;
+  min-width: 70px;
+}
+
+.slider {
+  flex: 1;
+  height: 5px;
+  border-radius: 5px;
+  background: #d1d5db;
+  outline: none;
+  margin: 0 0.5rem;
+}
+
+.value-display {
+  font-size: 0.75rem;
+  color: #4b5563;
+  min-width: 40px;
+  text-align: right;
+}
+
+input[type="color"] {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 4px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.subtitle-note {
+  display: flex;
+  align-items: flex-start;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.subtitle-note .note-icon {
+  margin-right: 0.375rem;
+  font-size: 0.875rem;
+}
+
+/* Keyboard Shortcuts Section */
+.keyboard-shortcuts-section {
+  margin-top: 1rem;
+}
+
+.shortcuts-container {
+  padding: 0.75rem;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.shortcuts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.shortcuts-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin: 0;
+}
+
+.shortcuts-toggle {
+  display: flex;
+  align-items: center;
+}
+
+.toggle-checkbox {
+  margin-right: 0.5rem;
+}
+
+.toggle-label {
+  font-size: 0.75rem;
+  color: #4b5563;
+}
+
+.shortcut-item {
+  margin-bottom: 0.5rem;
+}
+
+.shortcut-description {
+  font-size: 0.75rem;
+  color: #4b5563;
+  margin-bottom: 0.5rem;
+}
+
+.shortcut-key-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.shortcut-key-combo {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.5rem;
+}
+
+.modifier-checkbox {
+  display: flex;
+  align-items: center;
+  margin-right: 0.5rem;
+  font-size: 0.75rem;
+  color: #4b5563;
+  cursor: pointer;
+}
+
+.modifier-checkbox input {
+  margin-right: 0.25rem;
+}
+
+.plus-sign {
+  margin: 0 0.25rem;
+  color: #6b7280;
+  font-weight: bold;
+}
+
+.key-input {
+  width: 1.5rem;
+  text-align: center;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  padding: 0.125rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.save-shortcut-btn {
+  padding: 0.375rem 0.75rem;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+  cursor: pointer;
+}
+
+.save-shortcut-btn:hover {
+  background-color: #1d4ed8;
+}
+
+.shortcut-status {
+  font-size: 0.75rem;
+  color: #059669;
+  min-height: 1.25rem;
+}
+
+.shortcut-status.error {
+  color: #dc2626;
+}
+
+.shortcut-note {
+  display: flex;
+  align-items: center;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.5rem;
+}
+
+.note-icon {
+  margin-right: 0.375rem;
+  font-size: 0.875rem;
+}
+
+/* Only hide keyboard shortcuts section on actual mobile devices */
+/* This is now handled by JavaScript detection based on user agent */
