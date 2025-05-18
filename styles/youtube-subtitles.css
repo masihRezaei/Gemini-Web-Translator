@@ -1,0 +1,31 @@
+/* YouTube Subtitles Translation Styles */
+
+/* Main subtitles container */
+.gemini-youtube-subtitles {
+  position: fixed;
+  bottom: 120px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  z-index: 9999;
+  padding: 10px;
+  pointer-events: none;
+}
+
+/* Translated subtitle text */
+.gemini-subtitle-translated {
+  background-color: rgba(26, 115, 232, 0.8);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  display: inline-block;
+  max-width: 80%;
+  font-size: 16px;
+  line-height: 1.4;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
+}
+
+/* RTL support for Persian/Arabic */
+[dir="rtl"] {
+  text-align: right;
+}
